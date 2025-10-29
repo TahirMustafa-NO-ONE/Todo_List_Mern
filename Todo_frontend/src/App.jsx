@@ -13,12 +13,18 @@ function App() {
   const [showFinished, setShowFinished] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
 
+  // ✅ Automatically choose API base URL (local vs Docker)
+  const API_BASE_URL =
+    window.location.hostname === "localhost"
+      ? "http://localhost:5000"
+      : "http://20.255.115.47:5000";
+
   useEffect(() => {
     fetchTodos();
   }, []);
 
   const fetchTodos = async () => {
-    const response = await fetch('http://localhost:5555/todos');
+    const response = await fetch(`${API_BASE_URL}/todos`);
     const data = await response.json();
     setTodos(data);
   };
@@ -39,7 +45,7 @@ function App() {
   const handleUpdate = async () => {
     if (todo.trim() && editId) {
       const updatedTodo = { todo };
-      const response = await fetch(`http://localhost:5555/todos/${editId}`, {
+      const response = await fetch(`${API_BASE_URL}/todos/${editId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedTodo)
@@ -54,7 +60,7 @@ function App() {
   const handleDelete = async (e, id) => {
     setDeletingId(id);
     setTimeout(async () => {
-      await fetch(`http://localhost:5555/todos/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/todos/${id}`, { method: 'DELETE' });
       setTodos(todos.filter(item => item.id !== id));
       setDeletingId(null);
     }, 500);
@@ -62,7 +68,7 @@ function App() {
 
   const handleAdd = async () => {
     const newTodo = { id: uuidv4(), todo, isCompleted: false };
-    const response = await fetch('http://localhost:5555/todos', {
+    const response = await fetch(`${API_BASE_URL}/todos`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newTodo)
@@ -81,7 +87,7 @@ function App() {
     newTodos[index].isCompleted = !newTodos[index].isCompleted;
 
     const updatedTodo = { isCompleted: newTodos[index].isCompleted };
-    await fetch(`http://localhost:5555/todos/${id}`, {
+    await fetch(`${API_BASE_URL}/todos/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedTodo)
