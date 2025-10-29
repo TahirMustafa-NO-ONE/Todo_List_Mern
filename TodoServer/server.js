@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 const PORT = 5555;
@@ -11,9 +12,13 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/morTodolist')
-.then(() => console.log('MongoDB connected...'))
-.catch(err => console.error(err));
+mongoose.connect(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('✅ Connected to MongoDB Atlas'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
+
 
 const todoSchema = new mongoose.Schema({
   id: { type: String, required: true },
