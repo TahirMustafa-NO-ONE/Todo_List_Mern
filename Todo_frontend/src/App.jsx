@@ -13,26 +13,57 @@ function App() {
   const [showFinished, setShowFinished] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
 
-  // ✅ Automatically choose API base URL (local vs Docker)
-  const API_BASE_URL =
-    window.location.hostname === "localhost"
-      ? "http://localhost:5000"
-      : "http://20.255.115.47:5000";
+  // ✅ Use environment variable from .env file
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     fetchTodos();
   }, []);
 
+  // 🔹 Fetch all todos
   const fetchTodos = async () => {
-    const response = await fetch(`${API_BASE_URL}/todos`);
-    const data = await response.json();
-    setTodos(data);
+    try {
+      const response = await fetch(`${API_BASE_URL}/todos`);
+      const data = await response.json();
+      setTodos(data);
+    } catch (err) {
+      console.error("Error fetching todos:", err);
+    }
   };
 
-  const toggleFinished = () => {
-    setShowFinished(!showFinished);
+  // 🔹 Add new todo
+  const handleAdd = async () => {
+    if (todo.trim().length <= 3) return;
+    const newTodo = { id: uuidv4(), todo, isCompleted: false };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/todos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTodo),
+      });
+      const data = await response.json();
+      setTodos([...todos, data]);
+      setTodo("");
+    } catch (err) {
+      console.error("Error adding todo:", err);
+    }
   };
 
+  // 🔹 Delete todo
+  const handleDelete = async (e, id) => {
+    setDeletingId(id);
+    try {
+      await fetch(`${API_BASE_URL}/todos/${id}`, { method: 'DELETE' });
+      setTodos(todos.filter(item => item.id !== id));
+    } catch (err) {
+      console.error("Error deleting todo:", err);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // 🔹 Edit todo
   const handleEdit = (e, id) => {
     e.preventDefault();
     const t = todos.find((i) => i.id === id);
@@ -42,58 +73,48 @@ function App() {
     }
   };
 
+  // 🔹 Update todo
   const handleUpdate = async () => {
-    if (todo.trim() && editId) {
-      const updatedTodo = { todo };
+    if (!todo.trim() || !editId) return;
+    const updatedTodo = { todo };
+
+    try {
       const response = await fetch(`${API_BASE_URL}/todos/${editId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedTodo)
+        body: JSON.stringify(updatedTodo),
       });
       const data = await response.json();
       setTodos(todos.map((item) => item.id === editId ? data : item));
       setTodo("");
       setEditId(null);
+    } catch (err) {
+      console.error("Error updating todo:", err);
     }
   };
 
-  const handleDelete = async (e, id) => {
-    setDeletingId(id);
-    setTimeout(async () => {
-      await fetch(`${API_BASE_URL}/todos/${id}`, { method: 'DELETE' });
-      setTodos(todos.filter(item => item.id !== id));
-      setDeletingId(null);
-    }, 500);
-  };
-
-  const handleAdd = async () => {
-    const newTodo = { id: uuidv4(), todo, isCompleted: false };
-    const response = await fetch(`${API_BASE_URL}/todos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newTodo)
-    });
-    const data = await response.json();
-    setTodos([...todos, data]);
-    setTodo("");
-  };
-
-  const handleChange = (e) => setTodo(e.target.value);
-
+  // 🔹 Toggle complete
   const handleCheckbox = async (e) => {
     const id = e.target.name;
     const index = todos.findIndex(item => item.id === id);
     const newTodos = [...todos];
     newTodos[index].isCompleted = !newTodos[index].isCompleted;
 
-    const updatedTodo = { isCompleted: newTodos[index].isCompleted };
-    await fetch(`${API_BASE_URL}/todos/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedTodo)
-    });
-    setTodos(newTodos);
+    try {
+      const updatedTodo = { isCompleted: newTodos[index].isCompleted };
+      await fetch(`${API_BASE_URL}/todos/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTodo),
+      });
+      setTodos(newTodos);
+    } catch (err) {
+      console.error("Error updating checkbox:", err);
+    }
   };
+
+  const toggleFinished = () => setShowFinished(!showFinished);
+  const handleChange = (e) => setTodo(e.target.value);
 
   return (
     <>
